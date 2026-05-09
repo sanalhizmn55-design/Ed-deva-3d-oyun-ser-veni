@@ -1,0 +1,27 @@
+body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; }
+canvas { display: block; }
+
+#ui {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    font-family: 'Arial', sans-serif; font-size: 24px; color: white;
+    background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px;
+    z-index: 100; pointer-events: none;
+}
+
+#controls {
+    position: absolute; bottom: 30px; width: 100%;
+    display: flex; justify-content: space-between; padding: 0 20px;
+    box-sizing: border-box; z-index: 100;
+}
+
+.btn {
+    width: 80px; height: 80px; background: rgba(255,255,255,0.2);
+    border: 2px solid white; border-radius: 50%; color: white;
+    font-weight: bold; font-size: 14px; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-gas { background: rgba(0, 255, 0, 0.3); }
+.btn-brake { background: rgba(255, 0, 0, 0.3); width: 60px; height: 60px; }
+
+.joystick-zone, .pedal-zone { display: flex; gap: 10px; align-items: center; }
