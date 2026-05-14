@@ -3,149 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>101 Okey Pro</title>
+    <title>101 Okey Interactive</title>
     <style>
         body { margin: 0; background: #07330a; font-family: sans-serif; color: white; overflow: hidden; touch-action: none; }
-        #game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+        #game-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; visibility: hidden; }
         
-        /* Tam Ekran Butonu Başlangıçta Görünür */
-        #fullscreen-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; align-items: center; justify-content: center; }
+        #fullscreen-overlay { position: fixed; inset: 0; background: #000; z-index: 500; display: flex; align-items: center; justify-content: center; }
 
-        /* Masa Alanı */
-        .table-area { flex: 1; display: grid; grid-template-columns: 120px 1fr 120px; grid-template-rows: 60px 1fr; position: relative; }
-        .bot { background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px; text-align: center; border: 2px solid #444; height: fit-content; align-self: center; }
-        .active-turn { border-color: #f1c40f; box-shadow: 0 0 15px #f1c40f; }
+        /* Oyun İçi Bildirim */
+        #game-toast {
+            position: fixed; top: 30%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: #f1c40f; padding: 12px 25px;
+            border-radius: 20px; border: 1px solid #f1c40f; z-index: 1000;
+            font-weight: bold; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
 
-        .center-board { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
-        .open-area { width: 80%; height: 120px; border: 2px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #aaa; }
+        .table-area { flex: 1; display: grid; grid-template-columns: 100px 1fr 100px; grid-template-rows: 50px 1fr; }
+        .bot { background: rgba(0,0,0,0.5); padding: 8px; border-radius: 10px; text-align: center; border: 2px solid #333; align-self: center; font-size: 11px; }
+        .active-turn { border-color: #2ecc71; box-shadow: 0 0 10px #2ecc71; }
 
-        /* Çift Sıra Istaka */
-        .player-rack { background: #3d230d; height: 180px; padding: 10px; border-top: 6px solid #291809; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        .rack-row { display: flex; gap: 4px; height: 75px; width: 95%; justify-content: center; }
+        .center-board { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .indicator-box { background: #fff; color: #000; padding: 5px; border-radius: 4px; font-weight: bold; font-size: 11px; text-align: center; }
+
+        /* Istaka ve Sürükleme Alanı */
+        .player-rack { background: #3d230d; height: 200px; padding: 10px; border-top: 6px solid #261709; display: flex; flex-direction: column; align-items: center; }
+        .rack-row { display: flex; gap: 4px; height: 75px; width: 98%; justify-content: center; margin-bottom: 5px; }
         
-        .tile { width: 42px; height: 68px; background: #fdf5e6; color: #000; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; box-shadow: 2px 2px 4px #000; cursor: pointer; border-bottom: 3px solid #ccc; position: relative; }
-        .tile.red { color: #d63031; } .tile.blue { color: #0984e3; } .tile.black { color: #2d3436; } .tile.yellow { color: #f39c12; }
-        .tile.selected { transform: translateY(-10px); border-color: #f1c40f; }
+        .tile { 
+            width: 42px; height: 68px; background: #fdf5e6; color: #000; border-radius: 4px; 
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; 
+            box-shadow: 1px 2px 3px #000; cursor: grab; border-bottom: 3px solid #ccc;
+            user-select: none; touch-action: none;
+        }
+        .tile:active { cursor: grabbing; opacity: 0.8; transform: scale(1.1); z-index: 100; }
+        .red { color: #d63031; } .blue { color: #0984e3; } .black { color: #2d3436; } .yellow { color: #f39c12; }
 
-        .btn-group { display: flex; gap: 10px; margin-bottom: 5px; }
-        button { padding: 6px 15px; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-sort { background: #27ae60; color: white; }
-        .btn-open { background: #2980b9; color: white; }
+        .controls { display: flex; gap: 10px; margin-bottom: 10px; }
+        button { padding: 5px 15px; border-radius: 15px; border: none; font-weight: bold; cursor: pointer; color: white; font-size: 11px; }
+        
+        .drop-target { border: 1px dashed rgba(255,255,255,0.2); border-radius: 4px; width: 42px; height: 68px; }
     </style>
 </head>
 <body>
 
+<div id="game-toast">Bildirim</div>
+
 <div id="fullscreen-overlay">
-    <button onclick="startFullscreen()" style="padding: 20px 40px; font-size: 20px; background: #e67e22; color: white; border-radius: 10px;">OYUNU BAŞLAT (TAM EKRAN)</button>
+    <button onclick="launchGame()" style="padding: 15px 30px; background: #e67e22; border-radius: 8px; font-size: 18px;">TAŞLARI DİZ (TAM EKRAN)</button>
 </div>
 
 <div id="game-container">
-    <div style="grid-column: span 3; text-align: center; padding-top: 10px;" class="bot" id="bot2">İpek (Karşı)</div>
+    <div style="grid-column: span 3; display: flex; justify-content: center; padding-top: 5px;"><div class="bot" id="bot2">İpek</div></div>
+    
     <div class="table-area">
-        <div class="bot" id="bot1" style="margin-left: 10px;">Seda (Sol)</div>
+        <div class="bot" id="bot1" style="margin-left: 5px;">Seda</div>
         <div class="center-board">
-            <div id="turn-msg" style="color: #f1c40f; font-weight: bold;">Senin Sıran!</div>
-            <div class="open-area" id="table-open-area">Buraya Seri Açılacak</div>
-            <div style="display: flex; gap: 40px;">
-                <div id="draw-btn" style="width: 60px; height: 85px; background: #fff; color: #000; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 4px 4px 0 #222; cursor: pointer;">DESTE</div>
-                <div id="discard-area" style="width: 60px; height: 85px; border: 2px dashed #fff; border-radius: 5px;"></div>
+            <div style="display: flex; gap: 30px; align-items: center;">
+                <div class="indicator-box">OKEY<br><span id="okey-val" class="blue">?</span></div>
+                <div id="draw-btn" style="width: 55px; height: 80px; background: #fff; color: #000; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer;">DESTE</div>
+                <div id="discard-box" style="width: 55px; height: 80px; border: 2px dashed #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center;">At</div>
             </div>
+            <div id="turn-msg" style="font-size: 13px; color: #f1c40f;">SIRALAMA YAPABİLİRSİN</div>
         </div>
-        <div class="bot" id="bot3" style="margin-right: 10px;">Rümeysa (Sağ)</div>
+        <div class="bot" id="bot3" style="margin-right: 5px;">Rümeysa</div>
     </div>
 
     <div class="player-rack">
-        <div class="btn-group">
-            <button class="btn-sort" onclick="sortTiles()">SIRALA</button>
-            <button class="btn-open" onclick="openSeries()">EL AÇ (101)</button>
+        <div class="controls">
+            <button style="background: #27ae60;" onclick="autoSort()">OTOMATİK DİZ</button>
+            <button style="background: #2980b9;" onclick="showToast('Sayı 101 değil!')">EL AÇ</button>
+            <button style="background: #c0392b;" onclick="location.reload()">YENİLE</button>
         </div>
-        <div class="rack-row" id="row-1"></div>
-        <div class="rack-row" id="row-2"></div>
+        <!-- Istaka Satırları -->
+        <div class="rack-row" id="row1"></div>
+        <div class="rack-row" id="row2"></div>
     </div>
 </div>
 
 <script>
     let myTiles = [];
     let turn = 0;
-    const colors = ['red', 'blue', 'black', 'yellow'];
+    let draggedItem = null;
 
-    function startFullscreen() {
-        const doc = document.documentElement;
-        if (doc.requestFullscreen) doc.requestFullscreen();
-        document.getElementById('fullscreen-overlay').style.display = 'none';
-        initGame();
+    function showToast(text) {
+        const t = document.getElementById('game-toast');
+        t.innerText = text; t.style.opacity = '1';
+        setTimeout(() => { t.style.opacity = '0'; }, 2000);
     }
 
-    function initGame() {
-        let deck = [];
+    function launchGame() {
+        if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        document.getElementById('fullscreen-overlay').style.display = 'none';
+        document.getElementById('game-container').style.visibility = 'visible';
+        initTiles();
+    }
+
+    function initTiles() {
+        const colors = ['red', 'blue', 'black', 'yellow'];
+        let tempDeck = [];
         for(let i=0; i<2; i++) {
-            colors.forEach(c => {
-                for(let n=1; n<=13; n++) deck.push({color: c, num: n});
-            });
+            colors.forEach(c => { for(let n=1; n<=13; n++) tempDeck.push({color: c, num: n}); });
         }
-        deck.sort(() => Math.random() - 0.5);
-        myTiles = deck.splice(0, 21);
+        tempDeck.sort(() => Math.random() - 0.5);
+        myTiles = tempDeck.splice(0, 21);
+        
+        const okey = tempDeck[0];
+        const okeyEl = document.getElementById('okey-val');
+        okeyEl.innerText = okey.num; okeyEl.className = okey.color;
+        
         renderRack();
     }
 
     function renderRack() {
-        const row1 = document.getElementById('row-1');
-        const row2 = document.getElementById('row-2');
-        row1.innerHTML = ''; row2.innerHTML = '';
+        const r1 = document.getElementById('row1');
+        const r2 = document.getElementById('row2');
+        r1.innerHTML = ''; r2.innerHTML = '';
 
-        myTiles.forEach((t, i) => {
+        myTiles.forEach((tile, index) => {
             const div = document.createElement('div');
-            div.className = `tile ${t.color}`;
-            div.innerText = t.num;
-            div.onclick = () => discard(i);
+            div.className = `tile ${tile.color}`;
+            div.innerText = tile.num;
+            div.draggable = true;
             
-            if(i < 11) row1.appendChild(div);
-            else row2.appendChild(div);
+            // Sürükle-Bırak Eventleri
+            div.addEventListener('dragstart', () => { draggedItem = index; });
+            div.addEventListener('dragover', e => e.preventDefault());
+            div.addEventListener('drop', () => { moveTile(draggedItem, index); });
+            
+            // Çift tıkla taş atma
+            div.addEventListener('dblclick', () => { if(turn === 0) discardTile(index); });
+
+            if(index < 11) r1.appendChild(div);
+            else r2.appendChild(div);
         });
     }
 
-    function discard(index) {
-        if(turn !== 0) return;
-        const tile = myTiles.splice(index, 1)[0];
-        document.getElementById('discard-area').innerHTML = `<div class="tile ${tile.color}">${tile.num}</div>`;
+    function moveTile(fromIndex, toIndex) {
+        const tile = myTiles.splice(fromIndex, 1)[0];
+        myTiles.splice(toIndex, 0, tile);
+        renderRack();
+    }
+
+    function discardTile(index) {
+        const t = myTiles.splice(index, 1)[0];
+        document.getElementById('discard-box').innerHTML = `<div class="tile ${t.color}">${t.num}</div>`;
         renderRack();
         turn = 1;
-        updateUI();
-        setTimeout(botLoop, 1500);
+        showToast("Sıra rakiplerde...");
+        botTurn();
     }
 
-    function botLoop() {
-        if(turn === 0) return;
-        document.querySelectorAll('.bot').forEach(b => b.classList.remove('active-turn'));
+    function botTurn() {
         document.getElementById(`bot${turn}`).classList.add('active-turn');
-        
         setTimeout(() => {
+            document.getElementById(`bot${turn}`).classList.remove('active-turn');
             turn = (turn + 1) % 4;
             if(turn === 0) {
-                document.querySelectorAll('.bot').forEach(b => b.classList.remove('active-turn'));
-                updateUI();
+                showToast("Senin sıran!");
+                document.getElementById('turn-msg').innerText = "TAŞ ÇEK VEYA DİZ";
             } else {
-                botLoop();
+                botTurn();
             }
-        }, 1000);
+        }, 1200);
     }
 
-    function updateUI() {
-        document.getElementById('turn-msg').innerText = turn === 0 ? "Senin Sıran!" : "Rakipler Oynuyor...";
-    }
-
-    function sortTiles() {
-        myTiles.sort((a, b) => a.num - b.num);
+    function autoSort() {
+        myTiles.sort((a, b) => (a.color === b.color) ? (a.num - b.num) : a.color.localeCompare(b.color));
         renderRack();
-    }
-
-    function openSeries() {
-        alert("Henüz perleriniz 101 sayısına ulaşmadı!");
+        showToast("Seri dizildi.");
     }
 
     document.getElementById('draw-btn').onclick = () => {
         if(turn === 0 && myTiles.length < 22) {
-            myTiles.push({color: colors[Math.floor(Math.random()*4)], num: Math.floor(Math.random()*13)+1});
+            myTiles.push({color: 'red', num: Math.floor(Math.random()*13)+1}); // Örnek çekme
             renderRack();
         }
     };
