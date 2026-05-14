@@ -2,102 +2,104 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Kaçış Oyunu</title>
+    <title>Sonsuz Yol Yarışı</title>
     <style>
-        body { margin: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; }
-        canvas { background: #000; border: 3px solid #555; cursor: crosshair; }
-        .info { position: absolute; top: 10px; font-size: 20px; }
+        body { margin: 0; background: #222; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: Arial; color: white; }
+        canvas { background: #333; border: 5px solid #555; }
+        .ui { position: absolute; top: 20px; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="info">Skor: <span id="score">0</span></div>
-    <canvas id="gameCanvas"></canvas>
+    <div class="ui">
+        <h1>HIZLI SÜRÜŞ</h1>
+        <p>Skor: <span id="score">0</span></p>
+    </div>
+    <canvas id="raceCanvas"></canvas>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
+        const canvas = document.getElementById("raceCanvas");
         const ctx = canvas.getContext("2d");
-        const scoreDist = document.getElementById("score");
+        const scoreEl = document.getElementById("score");
 
-        canvas.width = 500;
-        canvas.height = 500;
+        canvas.width = 400;
+        canvas.height = 600;
 
         let score = 0;
+        let speed = 5;
         let gameActive = true;
-        let enemies = [];
-        let player = { x: 250, y: 250, size: 20, color: "#00ff00" };
 
-        // Mouse takibi
+        let car = { x: 175, y: 500, w: 50, h: 80, color: "#e74c3c" };
+        let enemies = [];
+
+        // Kontroller
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowLeft" && car.x > 0) car.x -= 25;
+            if (e.key === "ArrowRight" && car.x < canvas.width - car.w) car.x += 25;
+        });
+
+        // Dokunmatik/Mouse kontrolleri
         canvas.addEventListener("mousemove", (e) => {
             let rect = canvas.getBoundingClientRect();
-            player.x = e.clientX - rect.left - player.size / 2;
-            player.y = e.clientY - rect.top - player.size / 2;
+            let mouseX = e.clientX - rect.left;
+            car.x = mouseX - car.w / 2;
+            if (car.x < 0) car.x = 0;
+            if (car.x > canvas.width - car.w) car.x = canvas.width - car.w;
         });
 
         function spawnEnemy() {
-            if (!gameActive) return;
-            let size = 15 + Math.random() * 20;
-            let x, y;
-            
-            // Düşmanları kenarlardan başlat
-            if (Math.random() < 0.5) {
-                x = Math.random() < 0.5 ? 0 : canvas.width;
-                y = Math.random() * canvas.height;
-            } else {
-                x = Math.random() * canvas.width;
-                y = Math.random() < 0.5 ? 0 : canvas.height;
-            }
-
-            enemies.push({
-                x: x,
-                y: y,
-                size: size,
-                speedX: (Math.random() - 0.5) * 4,
-                speedY: (Math.random() - 0.5) * 4,
-                color: "#ff4444"
-            });
-            
-            // Zorluğu artır (her 2 saniyede yeni düşman)
-            setTimeout(spawnEnemy, 2000 / (1 + score / 100));
+            let xPos = Math.random() * (canvas.width - 50);
+            enemies.push({ x: xPos, y: -100, w: 50, h: 80, color: "#3498db" });
         }
+
+        setInterval(() => { if(gameActive) spawnEnemy(); }, 1200);
 
         function draw() {
             if (!gameActive) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Oyuncuyu çiz
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.size, player.size);
+            // Yol çizgileri
+            ctx.strokeStyle = "white";
+            ctx.setLineDash([20, 20]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
 
-            // Düşmanları güncelle ve çiz
+            // Kendi Arabamız
+            ctx.fillStyle = car.color;
+            ctx.fillRect(car.x, car.y, car.w, car.h);
+            // Arabanın farları
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(car.x + 5, car.y, 10, 5);
+            ctx.fillRect(car.x + car.w - 15, car.y, 10, 5);
+
+            // Düşman Arabalar
             enemies.forEach((enemy, index) => {
-                enemy.x += enemy.speedX;
-                enemy.y += enemy.speedY;
-
-                // Ekran dışına çıkanları geri döndür
-                if (enemy.x < 0 || enemy.x > canvas.width) enemy.speedX *= -1;
-                if (enemy.y < 0 || enemy.y > canvas.height) enemy.speedY *= -1;
-
+                enemy.y += speed;
                 ctx.fillStyle = enemy.color;
-                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+                ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
 
-                // Çarpışma kontrolü
-                if (player.x < enemy.x + enemy.size &&
-                    player.x + player.size > enemy.x &&
-                    player.y < enemy.y + enemy.size &&
-                    player.y + player.size > enemy.y) {
+                // Çarpışma Testi
+                if (car.x < enemy.x + enemy.w &&
+                    car.x + car.w > enemy.x &&
+                    car.y < enemy.y + enemy.h &&
+                    car.y + car.h > enemy.y) {
                     gameActive = false;
-                    alert("YAKALANDIN! Skorun: " + Math.floor(score));
+                    alert("KAZA YAPTIN! Skorun: " + score);
                     location.reload();
+                }
+
+                // Geçilen arabalar
+                if (enemy.y > canvas.height) {
+                    enemies.splice(index, 1);
+                    score += 10;
+                    scoreEl.innerText = score;
+                    if(score % 100 === 0) speed += 0.5; // Gittikçe hızlanır
                 }
             });
 
-            score += 0.1;
-            scoreDist.innerText = Math.floor(score);
             requestAnimationFrame(draw);
         }
-
-        spawnEnemy();
         draw();
     </script>
 </body>
