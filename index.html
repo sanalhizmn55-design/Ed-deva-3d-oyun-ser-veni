@@ -2,132 +2,102 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Bounce - Offline Game</title>
+    <title>Kaçış Oyunu</title>
     <style>
-        body {
-            margin: 0;
-            background: #0a0a0a;
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-        canvas {
-            border: 4px solid #00f2ff;
-            box-shadow: 0 0 20px #00f2ff;
-            background: #000;
-            cursor: none;
-        }
-        .stats {
-            margin-bottom: 10px;
-            font-size: 24px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+        body { margin: 0; background: #1a1a1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; }
+        canvas { background: #000; border: 3px solid #555; cursor: crosshair; }
+        .info { position: absolute; top: 10px; font-size: 20px; }
     </style>
 </head>
 <body>
-
-    <div class="stats">Skor: <span id="score">0</span></div>
+    <div class="info">Skor: <span id="score">0</span></div>
     <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-        const scoreElement = document.getElementById("score");
+        const scoreDist = document.getElementById("score");
 
-        canvas.width = 600;
-        canvas.height = 400;
+        canvas.width = 500;
+        canvas.height = 500;
 
         let score = 0;
         let gameActive = true;
+        let enemies = [];
+        let player = { x: 250, y: 250, size: 20, color: "#00ff00" };
 
-        // Top özellikleri
-        let ball = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 10,
-            dx: 4,
-            dy: -4,
-            color: "#ff007b"
-        };
-
-        // Pedal özellikleri
-        let paddle = {
-            width: 100,
-            height: 15,
-            x: (canvas.width - 100) / 2,
-            color: "#00f2ff"
-        };
-
-        // Mouse hareketi
-        document.addEventListener("mousemove", (e) => {
-            let relativeX = e.clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddle.x = relativeX - paddle.width / 2;
-            }
+        // Mouse takibi
+        canvas.addEventListener("mousemove", (e) => {
+            let rect = canvas.getBoundingClientRect();
+            player.x = e.clientX - rect.left - player.size / 2;
+            player.y = e.clientY - rect.top - player.size / 2;
         });
 
-        function drawBall() {
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = ball.color;
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function drawPaddle() {
-            ctx.beginPath();
-            ctx.rect(paddle.x, canvas.height - paddle.height - 10, paddle.width, paddle.height);
-            ctx.fillStyle = paddle.color;
-            ctx.fill();
-            ctx.closePath();
-        }
-
-        function update() {
+        function spawnEnemy() {
             if (!gameActive) return;
-
-            // Duvarlardan sekme
-            if (ball.x + ball.dx > canvas.width - ball.radius || ball.x + ball.dx < ball.radius) {
-                ball.dx = -ball.dx;
-            }
-            if (ball.y + ball.dy < ball.radius) {
-                ball.dy = -ball.dy;
-            }
-
-            // Pedala çarpma kontrolü
-            if (ball.y + ball.dy > canvas.height - paddle.height - 20) {
-                if (ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
-                    ball.dy = -ball.dy;
-                    ball.dy *= 1.05; // Her vuruşta hızlanır
-                    ball.dx *= 1.05;
-                    score++;
-                    scoreElement.innerText = score;
-                    ball.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                } else if (ball.y + ball.dy > canvas.height) {
-                    gameActive = false;
-                    alert("OYUN BİTTİ! Skorun: " + score + "\nTekrar oynamak için sayfayı yenile.");
-                    document.location.reload();
-                }
+            let size = 15 + Math.random() * 20;
+            let x, y;
+            
+            // Düşmanları kenarlardan başlat
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? 0 : canvas.width;
+                y = Math.random() * canvas.height;
+            } else {
+                x = Math.random() * canvas.width;
+                y = Math.random() < 0.5 ? 0 : canvas.height;
             }
 
-            ball.x += ball.dx;
-            ball.y += ball.dy;
+            enemies.push({
+                x: x,
+                y: y,
+                size: size,
+                speedX: (Math.random() - 0.5) * 4,
+                speedY: (Math.random() - 0.5) * 4,
+                color: "#ff4444"
+            });
+            
+            // Zorluğu artır (her 2 saniyede yeni düşman)
+            setTimeout(spawnEnemy, 2000 / (1 + score / 100));
         }
 
         function draw() {
+            if (!gameActive) return;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBall();
-            drawPaddle();
-            update();
+
+            // Oyuncuyu çiz
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+
+            // Düşmanları güncelle ve çiz
+            enemies.forEach((enemy, index) => {
+                enemy.x += enemy.speedX;
+                enemy.y += enemy.speedY;
+
+                // Ekran dışına çıkanları geri döndür
+                if (enemy.x < 0 || enemy.x > canvas.width) enemy.speedX *= -1;
+                if (enemy.y < 0 || enemy.y > canvas.height) enemy.speedY *= -1;
+
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+
+                // Çarpışma kontrolü
+                if (player.x < enemy.x + enemy.size &&
+                    player.x + player.size > enemy.x &&
+                    player.y < enemy.y + enemy.size &&
+                    player.y + player.size > enemy.y) {
+                    gameActive = false;
+                    alert("YAKALANDIN! Skorun: " + Math.floor(score));
+                    location.reload();
+                }
+            });
+
+            score += 0.1;
+            scoreDist.innerText = Math.floor(score);
             requestAnimationFrame(draw);
         }
 
+        spawnEnemy();
         draw();
     </script>
 </body>
