@@ -3,164 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>101 Okey ENES DEVA Clean</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>101 Okey Elite Offline</title>
     <style>
-        :root { --green: #144d29; --wood: #4d2c19; --tile: #fdf5e6; }
+        :root { --bg: #1a4a6e; --grid: rgba(255,255,255,0.1); --tile: #fdfdfd; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        body { 
-            margin: 0; background: #000; font-family: 'Segoe UI', sans-serif; 
-            overflow: hidden; height: 100vh; width: 100vw; 
-        }
-
-        /* Ana Konteyner - Ekranın Dışına Taşmayı Önler */
-        #main-container {
-            width: 100%; height: 100%; background: var(--green);
-            display: flex; flex-direction: column; position: relative;
-        }
-
-        /* Üst Panel (Oyuncular) */
-        .header { 
-            height: 45px; display: flex; justify-content: space-around; 
-            align-items: center; background: rgba(0,0,0,0.4); padding: 0 10px;
-        }
-        .player { background: #333; color: #ccc; padding: 4px 20px; border-radius: 6px; font-size: 12px; border: 1px solid #555; }
-        .active { border-color: #4caf50; color: #fff; box-shadow: 0 0 8px #4caf50; }
-
-        /* Oyun Alanı */
-        .game-area { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        /* Izgara (Grid) */
-        .board-grid {
-            display: grid; grid-template-columns: repeat(18, 1fr); grid-template-rows: repeat(6, 1fr);
-            gap: 2px; width: 90%; height: 60%; border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.1); border-radius: 8px; padding: 4px;
-        }
-        .cell { border: 1px solid rgba(255,255,255,0.03); border-radius: 2px; }
-
-        /* Merkez Objeler (Deste & Okey) */
-        .center-ui { position: absolute; display: flex; gap: 25px; align-items: center; z-index: 5; }
-        .box { background: #fff; color: #000; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
-        .okey-box { width: 55px; height: 75px; border: 2px solid #f1c40f; font-size: 11px; }
-        .deck-box { width: 65px; height: 85px; cursor: pointer; border-bottom: 4px solid #ddd; font-size: 13px; }
-
-        /* Istaka Alanı */
-        .rack-section { 
-            height: 180px; background: linear-gradient(to bottom, #5d4037, #2d1b12); 
-            border-top: 6px solid #261709; display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .row { display: flex; gap: 3px; margin: 2px 0; height: 65px; }
-
-        /* Taşlar */
-        .tile { 
-            width: 38px; height: 62px; background: var(--tile); color: #000; border-radius: 4px;
-            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;
-            box-shadow: 1px 2px 4px rgba(0,0,0,0.4); border-bottom: 3px solid #ccc;
-        }
-        .red { color: #d32f2f; } .blue { color: #1976d2; } .black { color: #212121; } .yellow { color: #f57f17; }
-
-        /* Butonlar - Taşma Yapmayacak Boyutta */
-        .controls { position: absolute; top: -45px; display: flex; gap: 10px; }
-        .btn { 
-            width: 52px; height: 52px; border-radius: 50%; border: 2px solid #fff;
-            color: #fff; font-size: 10px; font-weight: bold; display: flex; 
-            align-items: center; justify-content: center; cursor: pointer; text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-
-        /* Bildirim */
-        #toast { 
-            position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.9); color: #f1c40f; padding: 10px 20px; 
-            border-radius: 20px; font-weight: bold; z-index: 100; opacity: 0; transition: 0.3s;
-        }
+        body { margin: 0; background: #000; font-family: sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+        #game-screen { width: 100%; height: 100%; background: radial-gradient(circle, #235d8a, #0f2a40); display: flex; flex-direction: column; position: relative; }
+        .top-bar { height: 40px; display: flex; justify-content: center; align-items: center; padding-top: 5px; }
+        .user-card { background: rgba(0,0,0,0.6); padding: 2px 15px; border-radius: 5px; display: flex; align-items: center; gap: 8px; border: 1px solid #555; }
+        .table-area { flex: 1; margin: 10px 40px; border: 2px solid rgba(255,255,255,0.3); border-radius: 10px; background: rgba(0,0,0,0.2); position: relative; display: grid; grid-template-columns: repeat(24, 1fr); grid-template-rows: repeat(10, 1fr); gap: 1px; padding: 2px; }
+        .grid-cell { border: 0.5px solid rgba(255,255,255,0.05); }
+        .side-player { position: absolute; top: 50%; transform: translateY(-50%); width: 35px; background: rgba(0,0,0,0.7); border: 1px solid #777; padding: 10px 0; text-align: center; border-radius: 5px; }
+        .left-p { left: -35px; } .right-p { right: -35px; }
+        .indicators { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 30px; z-index: 10; }
+        .info-box { width: 55px; height: 75px; background: white; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #000; font-weight: bold; box-shadow: 3px 3px 0 rgba(0,0,0,0.5); font-size: 11px; }
+        .rack-container { height: 160px; background: #5d4037; border-top: 5px solid #3e2723; display: flex; flex-direction: column; align-items: center; padding-top: 35px; position: relative; }
+        .rack-row { display: flex; gap: 3px; height: 60px; }
+        .tile { width: 36px; height: 58px; background: var(--tile); color: #000; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; border-bottom: 3px solid #bbb; box-shadow: 1px 1px 3px #000; cursor: pointer; }
+        .t-red { color: #d32f2f; } .t-blue { color: #1976d2; } .t-black { color: #000; } .t-yellow { color: #f9a825; }
+        .btns-row { position: absolute; top: -35px; display: flex; gap: 10px; }
+        .orange-btn { width: 48px; height: 48px; background: #f39c12; border: 2px solid #fff; border-radius: 50%; color: #fff; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 3px 6px rgba(0,0,0,0.4); cursor: pointer; }
+        #toast { position: fixed; top: 25%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #f1c40f; padding: 10px 25px; border-radius: 20px; font-weight: bold; opacity: 0; transition: 0.3s; z-index: 1000; border: 1px solid #f1c40f; }
     </style>
 </head>
 <body>
 
-<div id="toast">101 Okey</div>
+<div id="toast">Yeterli Sayı Yok!</div>
 
-<div id="main-container">
-    <div class="header">
-        <div class="player" id="p1">Seda</div>
-        <div class="player" id="p2">İpek</div>
-        <div class="player" id="p3">Rümeysa</div>
-    </div>
-
-    <div class="game-area">
-        <div class="board-grid" id="grid"></div>
-        <div class="center-ui">
-            <div class="box okey-box">OKEY<br><span class="red" style="font-size:20px">5</span></div>
-            <div class="box deck-box" onclick="draw()">DESTE<br>77</div>
-            <div style="width: 65px; height: 85px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px;">ATILAN</div>
+<div id="game-screen">
+    <div class="top-bar">
+        <div class="user-card">
+            <span style="font-size:12px; font-weight:bold">Hidayet Can</span>
+            <div style="width:40px; height:4px; background:#4caf50; border-radius:2px"></div>
         </div>
     </div>
 
-    <div class="rack-section">
-        <div class="controls">
-            <div class="btn" style="background:#2e7d32" onclick="sort(1)">SERİ<br>DİZ</div>
-            <div class="btn" style="background:#1565c0" onclick="sort(2)">ÇİFT<br>DİZ</div>
-            <div class="btn" style="background:#c62828" onclick="showErr()">EL<br>AÇ</div>
+    <div class="table-area" id="grid-bg">
+        <div class="side-player left-p"><span style="writing-mode: vertical-rl; font-size: 10px;">SABRİYE</span></div>
+        <div class="side-player right-p"><span style="writing-mode: vertical-rl; font-size: 10px;">RÜMEYSA</span></div>
+
+        <div class="indicators">
+            <div class="info-box">OKEY<br><span class="t-red" style="font-size:18px">6</span></div>
+            <div class="info-box" style="width:65px; height:85px;">DESTE<br>77</div>
+            <div style="width:60px; height:80px; border:2px dashed #fff; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:10px;">AT</div>
         </div>
-        <div class="row" id="r1"></div>
-        <div class="row" id="r2"></div>
+    </div>
+
+    <div class="rack-container">
+        <div class="btns-row">
+            <div class="orange-btn" onclick="sort(1)">SERİ<br>AÇ</div>
+            <div class="orange-btn" onclick="sort(2)">ÇİFT<br>AÇ</div>
+            <div class="orange-btn" style="background:#d35400" onclick="showMsg()">EL<br>AÇ</div>
+        </div>
+        <div class="rack-row" id="row1"></div>
+        <div class="rack-row" id="row2"></div>
     </div>
 </div>
 
 <script>
+    // --- OFFLINE ÇALIŞMA SİSTEMİ (Service Worker) ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            const blob = new Blob([`
+                const CACHE_NAME = 'okey-v1';
+                const assets = [location.href];
+                self.addEventListener('install', e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(assets))));
+                self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+            `], { type: 'text/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(workerUrl);
+        });
+    }
+
     let myTiles = [];
-    const colors = ['red', 'blue', 'black', 'yellow'];
+    const colors = ['t-red', 't-blue', 't-black', 't-yellow'];
 
-    // Izgarayı Oluştur
-    const grid = document.getElementById('grid');
-    for(let i=0; i<108; i++) grid.innerHTML += '<div class="cell"></div>';
-
-    function showErr() {
+    function showMsg() {
         const t = document.getElementById('toast');
-        t.innerText = "Yeterli sayıya ulaşamadınız! (Min: 101)";
         t.style.opacity = '1';
         setTimeout(() => t.style.opacity = '0', 2000);
     }
 
     function init() {
-        for(let i=0; i<21; i++) {
-            myTiles.push({ 
-                c: colors[Math.floor(Math.random()*4)], 
-                n: Math.floor(Math.random()*13)+1 
-            });
+        const grid = document.getElementById('grid-bg');
+        for(let i=0; i<240; i++) grid.appendChild(document.createElement('div')).className = 'grid-cell';
+        
+        for(let i=0; i<22; i++) {
+            myTiles.push({ c: colors[Math.floor(Math.random()*4)], n: Math.floor(Math.random()*13)+1 });
         }
         render();
     }
 
     function render() {
-        const r1 = document.getElementById('r1');
-        const r2 = document.getElementById('r2');
+        const r1 = document.getElementById('row1');
+        const r2 = document.getElementById('row2');
         r1.innerHTML = ''; r2.innerHTML = '';
-        
         myTiles.forEach((t, i) => {
             const d = document.createElement('div');
             d.className = `tile ${t.c}`;
             d.innerText = t.n;
-            // Sürükle bırak mantığı için temel yapı
-            d.onclick = () => { /* Yer değiştirme buraya gelecek */ };
             if(i < 11) r1.appendChild(d); else r2.appendChild(d);
         });
     }
 
-    function sort(type) {
-        if(type === 1) myTiles.sort((a,b) => a.c === b.c ? a.n - b.n : a.c.localeCompare(b.c));
+    function sort(m) {
+        if(m===1) myTiles.sort((a,b) => a.c === b.c ? a.n - b.n : a.c.localeCompare(b.c));
         else myTiles.sort((a,b) => a.n - b.n);
         render();
     }
 
-    function draw() {
-        if(myTiles.length < 22) {
-            myTiles.push({c: 'blue', n: 7});
-            render();
-        }
-    }
-
     init();
+    document.addEventListener('click', () => document.documentElement.requestFullscreen?.(), {once: true});
 </script>
 </body>
 </html>
