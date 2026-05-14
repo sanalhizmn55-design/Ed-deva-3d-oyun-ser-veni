@@ -2,194 +2,165 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>101 Okey Elite Plus</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>101 Okey ENES DEVA Clean</title>
     <style>
-        :root { --tile-bg: #fdf5e6; --wood: #8b4513; --felt: #1e4d2b; }
-        body { margin: 0; background: var(--felt); font-family: 'Segoe UI', sans-serif; color: white; overflow: hidden; touch-action: none; }
+        :root { --green: #144d29; --wood: #4d2c19; --tile: #fdf5e6; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        /* Tam Ekran & Başlatma */
-        #launch-screen { position: fixed; inset: 0; background: radial-gradient(circle, #2e7d32, #1b5e20); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        body { 
+            margin: 0; background: #000; font-family: 'Segoe UI', sans-serif; 
+            overflow: hidden; height: 100vh; width: 100vw; 
+        }
+
+        /* Ana Konteyner - Ekranın Dışına Taşmayı Önler */
+        #main-container {
+            width: 100%; height: 100%; background: var(--green);
+            display: flex; flex-direction: column; position: relative;
+        }
+
+        /* Üst Panel (Oyuncular) */
+        .header { 
+            height: 45px; display: flex; justify-content: space-around; 
+            align-items: center; background: rgba(0,0,0,0.4); padding: 0 10px;
+        }
+        .player { background: #333; color: #ccc; padding: 4px 20px; border-radius: 6px; font-size: 12px; border: 1px solid #555; }
+        .active { border-color: #4caf50; color: #fff; box-shadow: 0 0 8px #4caf50; }
+
+        /* Oyun Alanı */
+        .game-area { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
-        /* Oyun İçi Bildirim (2sn) */
-        #toast { position: fixed; top: 25%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: #f1c40f; padding: 12px 30px; border-radius: 50px; border: 2px solid #f1c40f; z-index: 2000; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; }
+        /* Izgara (Grid) */
+        .board-grid {
+            display: grid; grid-template-columns: repeat(18, 1fr); grid-template-rows: repeat(6, 1fr);
+            gap: 2px; width: 90%; height: 60%; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.1); border-radius: 8px; padding: 4px;
+        }
+        .cell { border: 1px solid rgba(255,255,255,0.03); border-radius: 2px; }
 
-        /* Masa Alanı */
-        #game-board { display: grid; grid-template-rows: auto 1fr auto; height: 100vh; visibility: hidden; }
-        
-        /* Üst ve Yan Paneller (Rakipler) */
-        .player-bar { display: flex; justify-content: space-between; align-items: center; padding: 5px 20px; background: rgba(0,0,0,0.3); }
-        .opponent { background: #333; border: 2px solid #555; padding: 5px 15px; border-radius: 8px; font-size: 13px; min-width: 100px; text-align: center; }
-        .active-turn { border-color: #4caf50; box-shadow: 0 0 10px #4caf50; }
-
-        /* Orta Alan (Izgara) */
-        .center-felt { position: relative; border: 2px solid rgba(255,255,255,0.1); margin: 10px; border-radius: 15px; background: rgba(0,0,0,0.1); display: grid; grid-template-columns: repeat(20, 1fr); grid-template-rows: repeat(8, 1fr); gap: 2px; padding: 5px; }
-        .grid-cell { border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; }
-
-        /* Göstergeler */
-        .game-status { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; gap: 40px; align-items: center; z-index: 10; }
-        .deck-pile { width: 65px; height: 90px; background: white; color: black; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; box-shadow: 5px 5px 0 #000; cursor: pointer; }
-        .okey-indicator { background: white; color: black; padding: 5px 10px; border-radius: 5px; font-weight: bold; text-align: center; border: 2px solid #f1c40f; }
+        /* Merkez Objeler (Deste & Okey) */
+        .center-ui { position: absolute; display: flex; gap: 25px; align-items: center; z-index: 5; }
+        .box { background: #fff; color: #000; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
+        .okey-box { width: 55px; height: 75px; border: 2px solid #f1c40f; font-size: 11px; }
+        .deck-box { width: 65px; height: 85px; cursor: pointer; border-bottom: 4px solid #ddd; font-size: 13px; }
 
         /* Istaka Alanı */
-        .rack-area { background: linear-gradient(to bottom, #5d4037, #3e2723); padding: 15px 5px; border-top: 8px solid #2e1a0b; position: relative; }
-        .rack-row { display: flex; justify-content: center; gap: 4px; margin-bottom: 5px; height: 75px; }
-        
-        /* Taş Tasarımı */
-        .tile { width: 44px; height: 70px; background: var(--tile-bg); color: black; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; box-shadow: 2px 3px 5px rgba(0,0,0,0.4); cursor: grab; border-bottom: 4px solid #d7ccc8; user-select: none; }
-        .tile.red { color: #d32f2f; } .tile.blue { color: #1976d2; } .tile.black { color: #212121; } .tile.yellow { color: #fbc02d; }
-        
-        /* Butonlar */
-        .action-btns { position: absolute; top: -50px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; }
-        .btn-round { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #fff; background: #ef6c00; color: white; font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: center; }
+        .rack-section { 
+            height: 180px; background: linear-gradient(to bottom, #5d4037, #2d1b12); 
+            border-top: 6px solid #261709; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .row { display: flex; gap: 3px; margin: 2px 0; height: 65px; }
+
+        /* Taşlar */
+        .tile { 
+            width: 38px; height: 62px; background: var(--tile); color: #000; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;
+            box-shadow: 1px 2px 4px rgba(0,0,0,0.4); border-bottom: 3px solid #ccc;
+        }
+        .red { color: #d32f2f; } .blue { color: #1976d2; } .black { color: #212121; } .yellow { color: #f57f17; }
+
+        /* Butonlar - Taşma Yapmayacak Boyutta */
+        .controls { position: absolute; top: -45px; display: flex; gap: 10px; }
+        .btn { 
+            width: 52px; height: 52px; border-radius: 50%; border: 2px solid #fff;
+            color: #fff; font-size: 10px; font-weight: bold; display: flex; 
+            align-items: center; justify-content: center; cursor: pointer; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        /* Bildirim */
+        #toast { 
+            position: fixed; top: 20%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); color: #f1c40f; padding: 10px 20px; 
+            border-radius: 20px; font-weight: bold; z-index: 100; opacity: 0; transition: 0.3s;
+        }
     </style>
 </head>
 <body>
 
-<div id="toast">Bildirim Mesajı</div>
+<div id="toast">101 Okey</div>
 
-<div id="launch-screen">
-    <h1 style="color: #f1c40f; font-size: 3em; margin-bottom: 20px;">101 ELITE</h1>
-    <button onclick="enterGame()" style="padding: 20px 50px; background: #f1c40f; border: none; border-radius: 50px; font-weight: bold; font-size: 20px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3);">OYUNA BAŞLA</button>
-</div>
-
-<div id="game-board">
-    <div class="player-bar">
-        <div class="opponent" id="bot1">Seda</div>
-        <div class="opponent" id="bot2">İpek</div>
-        <div class="opponent" id="bot3">Rümeysa</div>
+<div id="main-container">
+    <div class="header">
+        <div class="player" id="p1">Seda</div>
+        <div class="player" id="p2">İpek</div>
+        <div class="player" id="p3">Rümeysa</div>
     </div>
 
-    <div class="center-felt" id="grid-container">
-        <!-- Izgara hücreleri JS ile dolacak -->
-        <div class="game-status">
-            <div class="okey-indicator">OKEY<br><span id="okey-tile" class="blue">?</span></div>
-            <div class="deck-pile" onclick="drawTile()">DESTE<br><span id="count">77</span></div>
-            <div id="discard-slot" style="width: 65px; height: 90px; border: 3px dashed rgba(255,255,255,0.3); border-radius: 5px; display: flex; align-items: center; justify-content: center;">AT</div>
+    <div class="game-area">
+        <div class="board-grid" id="grid"></div>
+        <div class="center-ui">
+            <div class="box okey-box">OKEY<br><span class="red" style="font-size:20px">5</span></div>
+            <div class="box deck-box" onclick="draw()">DESTE<br>77</div>
+            <div style="width: 65px; height: 85px; border: 2px dashed rgba(255,255,255,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px;">ATILAN</div>
         </div>
     </div>
 
-    <div class="rack-area">
-        <div class="action-btns">
-            <div class="btn-round" onclick="sortSeries()" style="background: #2e7d32;">SERİ<br>DİZ</div>
-            <div class="btn-round" onclick="sortPairs()" style="background: #1565c0;">ÇİFT<br>DİZ</div>
-            <div class="btn-round" onclick="openHand()" style="background: #c62828;">EL<br>AÇ</div>
+    <div class="rack-section">
+        <div class="controls">
+            <div class="btn" style="background:#2e7d32" onclick="sort(1)">SERİ<br>DİZ</div>
+            <div class="btn" style="background:#1565c0" onclick="sort(2)">ÇİFT<br>DİZ</div>
+            <div class="btn" style="background:#c62828" onclick="showErr()">EL<br>AÇ</div>
         </div>
-        <div class="rack-row" id="rack1"></div>
-        <div class="rack-row" id="rack2"></div>
+        <div class="row" id="r1"></div>
+        <div class="row" id="r2"></div>
     </div>
 </div>
 
 <script>
     let myTiles = [];
-    let turn = 0;
-    let draggedIdx = null;
+    const colors = ['red', 'blue', 'black', 'yellow'];
 
-    function toast(msg) {
+    // Izgarayı Oluştur
+    const grid = document.getElementById('grid');
+    for(let i=0; i<108; i++) grid.innerHTML += '<div class="cell"></div>';
+
+    function showErr() {
         const t = document.getElementById('toast');
-        t.innerText = msg; t.style.opacity = '1';
+        t.innerText = "Yeterli sayıya ulaşamadınız! (Min: 101)";
+        t.style.opacity = '1';
         setTimeout(() => t.style.opacity = '0', 2000);
     }
 
-    function enterGame() {
-        if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        document.getElementById('launch-screen').style.display = 'none';
-        document.getElementById('game-board').style.visibility = 'visible';
-        createGrid();
-        setupGame();
-    }
-
-    function createGrid() {
-        const grid = document.getElementById('grid-container');
-        for(let i=0; i<160; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            grid.appendChild(cell);
+    function init() {
+        for(let i=0; i<21; i++) {
+            myTiles.push({ 
+                c: colors[Math.floor(Math.random()*4)], 
+                n: Math.floor(Math.random()*13)+1 
+            });
         }
+        render();
     }
 
-    function setupGame() {
-        const colors = ['red', 'blue', 'black', 'yellow'];
-        let deck = [];
-        for(let i=0; i<2; i++) {
-            colors.forEach(c => { for(let n=1; n<=13; n++) deck.push({color: c, num: n}); });
-        }
-        deck.sort(() => Math.random() - 0.5);
-        
-        myTiles = deck.splice(0, 21);
-        const okey = deck[0];
-        const okeyEl = document.getElementById('okey-tile');
-        okeyEl.innerText = okey.num; okeyEl.className = okey.color;
-        
-        renderRack();
-    }
-
-    function renderRack() {
-        const r1 = document.getElementById('rack1');
-        const r2 = document.getElementById('rack2');
+    function render() {
+        const r1 = document.getElementById('r1');
+        const r2 = document.getElementById('r2');
         r1.innerHTML = ''; r2.innerHTML = '';
-
-        myTiles.forEach((tile, i) => {
-            const div = document.createElement('div');
-            div.className = `tile ${tile.color}`;
-            div.innerText = tile.num;
-            div.draggable = true;
-            
-            div.ondragstart = () => { draggedIdx = i; };
-            div.ondragover = e => e.preventDefault();
-            div.ondrop = () => {
-                const item = myTiles.splice(draggedIdx, 1)[0];
-                myTiles.splice(i, 0, item);
-                renderRack();
-            };
-            
-            div.ondblclick = () => { if(turn === 0) throwTile(i); };
-
-            if(i < 11) r1.appendChild(div);
-            else r2.appendChild(div);
+        
+        myTiles.forEach((t, i) => {
+            const d = document.createElement('div');
+            d.className = `tile ${t.c}`;
+            d.innerText = t.n;
+            // Sürükle bırak mantığı için temel yapı
+            d.onclick = () => { /* Yer değiştirme buraya gelecek */ };
+            if(i < 11) r1.appendChild(d); else r2.appendChild(d);
         });
     }
 
-    function throwTile(idx) {
-        const tile = myTiles.splice(idx, 1)[0];
-        document.getElementById('discard-slot').innerHTML = `<div class="tile ${tile.color}">${tile.num}</div>`;
-        renderRack();
-        turn = 1;
-        toast("Sıra rakiplerde...");
-        runBots();
+    function sort(type) {
+        if(type === 1) myTiles.sort((a,b) => a.c === b.c ? a.n - b.n : a.c.localeCompare(b.c));
+        else myTiles.sort((a,b) => a.n - b.n);
+        render();
     }
 
-    function runBots() {
-        const b = document.getElementById(`bot${turn}`);
-        b.classList.add('active-turn');
-        setTimeout(() => {
-            b.classList.remove('active-turn');
-            turn = (turn + 1) % 4;
-            if(turn === 0) { toast("Senin sıran!"); }
-            else { runBots(); }
-        }, 1500);
-    }
-
-    function sortSeries() {
-        myTiles.sort((a, b) => a.color === b.color ? a.num - b.num : a.color.localeCompare(b.color));
-        renderRack();
-        toast("Seri dizildi");
-    }
-
-    function sortPairs() {
-        myTiles.sort((a, b) => a.num - b.num);
-        renderRack();
-        toast("Çiftler dizildi");
-    }
-
-    function openHand() { toast("Eliniz 101 etmiyor!"); }
-    
-    function drawTile() {
-        if(turn === 0 && myTiles.length < 22) {
-            myTiles.push({color: 'black', num: Math.floor(Math.random()*13)+1});
-            renderRack();
+    function draw() {
+        if(myTiles.length < 22) {
+            myTiles.push({c: 'blue', n: 7});
+            render();
         }
     }
+
+    init();
 </script>
 </body>
 </html>
