@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// Senin Özel Firebase Yapılandırman Entegre Edildi
 const firebaseConfig = {
     apiKey: "AIzaSyDI2UQjIjXWOnWAV613bs1Qr0-6pL5n_wo",
     authDomain: "devaokey101.firebaseapp.com",
@@ -11,15 +10,16 @@ const firebaseConfig = {
     messagingSenderId: "405865743713",
     appId: "1:405865743713:web:5b60bab107a5a5114f7120",
     measurementId: "G-9PGEFYYQH9",
-    databaseURL: "https://devaokey101-default-rtdb.firebaseio.com/"
+    databaseURL: "https://devaokey101-default-rtdb.firebaseio.com" // URL sonundaki slash düzeltildi
 };
 
-// Firebase Başlatılıyor
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const database = getDatabase(app);
+const database = getDatabase(app); // Doğru veritabanı referansı tetiklendi
 
 // DOM Elemanları
+const welcomeScreen = document.getElementById('welcome-screen');
+const btnStartFullscreen = document.getElementById('btn-start-fullscreen');
 const authContainer = document.getElementById('auth-container');
 const gameContainer = document.getElementById('game-container');
 const usernameInput = document.getElementById('username');
@@ -37,7 +37,30 @@ const myIstaka = document.getElementById('my-istaka');
 
 let currentUser = null;
 let currentRoomId = null;
-let myPlayerSlot = null; 
+let myPlayerSlot = null;
+
+// 📱 ADRES ÇUBUĞUNU GİZLEME, TAM EKRAN VE YATAY MODU TETİKLEMEK
+btnStartFullscreen.addEventListener('click', async () => {
+    try {
+        // Tam ekrana geçiş (Adres çubuğunu gizler)
+        if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) { /* Safari */
+            await document.documentElement.webkitRequestFullscreen();
+        }
+
+        // Ekranı Yatay (Landscape) Moda Zorla
+        if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape').catch(err => console.log("Oryantasyon kilitleme desteklenmiyor."));
+        }
+    } catch (error) {
+        console.log("Tam ekran başlatılamadı:", error);
+    }
+
+    // İlk ekranı gizle, giriş ekranını aç
+    welcomeScreen.classList.add('hidden');
+    authContainer.classList.remove('hidden');
+});
 
 // 1. KAYIT OLMA SİSTEMİ
 btnRegister.addEventListener('click', () => {
@@ -56,7 +79,7 @@ btnRegister.addEventListener('click', () => {
             authError.innerText = "Kayıt Başarılı! Giriş yapılıyor...";
             set(ref(database, 'users/' + userCredential.user.uid), {
                 username: username,
-                gold: 10000 
+                gold: 10000
             });
         })
         .catch((error) => {
@@ -91,6 +114,7 @@ btnLogout.addEventListener('click', () => {
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
+        welcomeScreen.classList.add('hidden');
         authContainer.classList.add('hidden');
         gameContainer.classList.remove('hidden');
         
@@ -100,7 +124,9 @@ onAuthStateChanged(auth, (user) => {
         });
     } else {
         currentUser = null;
-        authContainer.classList.remove('hidden');
+        // Eğer kullanıcı çıkış yaparsa ilk karşılama ekranına dön
+        welcomeScreen.classList.remove('hidden');
+        authContainer.classList.add('hidden');
         gameContainer.classList.add('hidden');
         okeyTable.classList.add('hidden');
         lobbyPanel.classList.remove('hidden');
@@ -108,7 +134,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// 5. ONLINE EŞLEŞME (LOBİ) MOTORU
+// 5. ONLINE EŞLEŞME MOTORU
 btnFindMatch.addEventListener('click', () => {
     lobbyStatus.innerText = "Boş VIP masalar aranıyor...";
     const roomsRef = ref(database, 'rooms');
@@ -247,7 +273,7 @@ function renderIstaka(taslar) {
         tasDiv.classList.add('tas', tas.renk);
         
         if(tas.renk === 'joker') {
-            tasDiv.innerText = "J";
+            text.innerText = "J";
             tasDiv.style.background = "#ffeb3b";
         } else {
             tasDiv.innerText = tas.sayi;
